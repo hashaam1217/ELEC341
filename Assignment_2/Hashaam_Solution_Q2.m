@@ -20,13 +20,14 @@ freqr = solve(eq1, freqr);
 freqr = double(freqr);
 
 Q2.wnr = freqr;  
-Q2.G = tf(Q2.wnr^2, [1, 2 * Q2.zeta * Q2.wnr, Q2.wnr^2]); 
+Kdc = 21;
+Q2.G = tf(Kdc * Q2.wnr^2, [1, 2 * Q2.zeta * Q2.wnr, Q2.wnr^2]); 
 % a2Submit
 
-% t = 0:0.001:1;  
+%t = 0:0.001:1;  
 %Z = Zeta; 
 %wn = wnr;
-Kdc = 1;
-y = tf(Q2.wnr^2, [1, 2 * Q2.wnr * Q2.zeta, wn^2]) * Kdc;
-step(Q2.G * Kdc, t);
-a2DSPlot(10078020, 2)
+%y = tf(Q2.wnr^2, [1, 2 * Q2.wnr * Q2.zeta, Q2.wnr^2]) * Kdc;
+%step(Q2.G * Kdc, t);
+%a2DSPlot(10078020, 2)
+%a2Submit
