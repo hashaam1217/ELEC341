@@ -6,7 +6,7 @@ Z = 0.3;
 wn = 42;
 Kdc = 1330; 
 y = tf(wn, [1, 2 * wn * Z, wn^2]) * Kdc;
-step(y, t);
+% step(y, t);
 Q1.FV = 31.7; 
 Q1.OSy = 43.3/ 31.7 * 100 - 100;
 
