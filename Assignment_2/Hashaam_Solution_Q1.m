@@ -23,4 +23,5 @@ Q1.Tr = 1 / (Beta * wn) * (pi - atan(Beta / Zeta));
 Q1.Tp = 79 / 1000;
 Q1.wn = wn; 
 Q1.Ts = 1 / (Zeta * wn) * log(50 / Beta);
-a2Submit;
+
+
