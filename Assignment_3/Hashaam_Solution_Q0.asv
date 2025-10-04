@@ -39,7 +39,7 @@ Ke = G * 50;
 Km = G * 50; 
 
 
-syms s;   
+s = tf('s');    
 
 % Figure 1 Impedances
 % C = M 
@@ -54,8 +54,7 @@ Zr21 = 1 / B21;
 Zr31 = 1 / B31; 
 
 % L = 1 / K
-% Z_L = s*L = s / K
-Zl0 = s / K0; 
-Zl1 = s / K1;
-Zl20 = s / K20; 
-Zl32 = s / K32; 
+Zl0 = 1 / K0; 
+Zl1 = 1 / K1;
+Zl20 = 1 / K20; 
+Zl32 = 1 / K32; 
