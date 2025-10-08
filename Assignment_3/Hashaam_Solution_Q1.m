@@ -30,7 +30,14 @@ current32 = (V2 - V3) / Zl32;
 Q2.Gf1 = minreal(tf(sym2poly(num1), sym2poly(den1)));
 Q2.Gf32 = minreal(tf(sym2poly(num3), sym2poly(den3)));
 
-Q3
+% Q3
+ZBR = 1 / Br; 
+ZJr = 1 / (s * Jr);
+ZT2 = (1 / ZBR + 1 / ZJr)^-1;
+syms iw w; 
+Vs = ZT2 * Km *iw; 
+eq1 = Vs - w == (Vs - w);
+
 % Y11 = 1 / Zl0 + 1 / Zc0 + 1 / ZT1;
 % Y12 = 0;
 % Y13 = -1 / ZT1; 
