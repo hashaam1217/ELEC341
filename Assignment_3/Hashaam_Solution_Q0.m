@@ -31,12 +31,12 @@ K32 = D / 3;
 
 % Figure 2 Parameters
 Rw = A / 3; 
-Lw = B; 
+Lw = B / 1000; 
 
-Jr = C / 10; 
-Br = D + E; 
-Ke = G * 50; 
-Km = G * 50; 
+Jr = C / 10 * 1 / 1000; 
+Br = (D + E) * 1 / 1000; 
+Ke = G * 50 / 1000; 
+Km = G * 50 / 1000; 
 
 
 syms s;   

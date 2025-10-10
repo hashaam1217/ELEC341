@@ -5,7 +5,7 @@
 % voltage. 
 ZT1 = (1 / Zr20 + 1 / Zl20)^-1;
 
-syms V0 V1 V2 V3 s; 
+syms V0 V1 V2 V3; 
 eq1 = V0 / Zl0 + V0 / Zc0 - 1 + (V0 - V2) / ZT1 == 0;
 eq2 = V1 / Zl1 + V1 / Zc1 + (V1 - V3) / Zr31 + (V1 - V2) / Zr21 == 0; 
 eq3 = (V2 - V3) / Zl32 + V2 / Zc2 + (V2 - V0) / ZT1 + (V2 - V1) / Zr21 == 0;
@@ -31,31 +31,14 @@ Q2.Gf1 = minreal(tf(sym2poly(num1), sym2poly(den1)));
 Q2.Gf32 = minreal(tf(sym2poly(num3), sym2poly(den3)));
 
 % Q3
-s = tf('s');
 % w / Vin * iw / w = iw / Vin 
 ZBR = 1 / Br; 
 ZJr = 1 / (s * Jr);
 ZT2 = (1 / ZBR + 1 / ZJr)^-1;
-ZLw = s * Lw;
-ZRw = Rw;
 % Equation1 = 1 / (Km * (ZJr + ZBR));
-A = [1 Ke/(s*Lw+Rw);
-    -Km Jr*s+Br];
-B = [1/(s*Lw+Rw); 0];
-% Ax = B
-% x = A^-1 B
-Temp_Ans = A\B;
-%[numi, deni] = numden(Temp_Ans(2)/1);
-%[numw, denw] = numden(Temp_Ans(1)/1);
-s = tf('s');
-%Q3.Gi = (3000*(s + 35))/(30*s^2 + 1061*s + 1080385);
-%Q4.Gw =         1800000/(30*s^2 + 1061*s + 1080385);
-%Q3.Gi = minreal(tf(sym2poly(numi), sym2poly(deni)));
-%Q4.Gw = minreal(tf(sym2poly(numw), sym2poly(denw)));
-Q3.Gi = Temp_Ans(1);
-Q4.Gw = Temp_Ans(2);
+A = [[1 (ZJr + ]; [3 4]];
 
-step(Q4.Gw)
+
 % Y11 = 1 / Zl0 + 1 / Zc0 + 1 / ZT1;
 % Y12 = 0;
 % Y13 = -1 / ZT1; 
