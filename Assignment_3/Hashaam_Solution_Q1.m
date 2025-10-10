@@ -55,6 +55,8 @@ s = tf('s');
 Q3.Gi = Temp_Ans(1);
 Q4.Gw = Temp_Ans(2);
 
+
+
 step(Q4.Gw)
 % Y11 = 1 / Zl0 + 1 / Zc0 + 1 / ZT1;
 % Y12 = 0;

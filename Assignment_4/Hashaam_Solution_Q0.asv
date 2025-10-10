@@ -34,9 +34,4 @@ Bg = D / 30 * 10^-3;
 n = E; 
 
 % From Previous Assignment
-Br = (D + E) / 1000; 
-Jr = C / 10 * 10^-3; 
-Km = G * 50  / 1000; 
-Ke = Km; 
-Rw = A / 3;
-Lw = B / 1000; 
+Br = (D )
