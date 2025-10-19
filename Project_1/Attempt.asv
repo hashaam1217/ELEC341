@@ -1,0 +1,32 @@
+% Date: 18/10/2025
+% Name: Hashaam Zafar
+% Assignment: Project Part 1
+
+clear all; clc; 
+%student number
+SN =10078020; 
+s=tf('s');
+
+A = 11;
+B = 10; 
+C = 10; 
+D = 17; 
+E = 18;
+F = 10; 
+G = 12; 
+H = 10; 
+
+% Table 1
+Js = (A / 5) * 1e-7; % gcm^2
+Ms = B / 4 * 1e-3; % g
+Bs = C / 3; % Ns/m
+ns = D / (2*E) * 1e2; % turn/cm
+Jf = F / 3 * 1e-7; % gcm^2
+Bf = G * 1e-3; % mNms
+nf = H * 1e2; % deg/cm
+Bt = A *1e-3; % mNms
+Kt = B*C* 1e-3; % mNm
+% nt? 
+Bl = D / 5; % Ns/m
+Kl = E*F; % N/m
+L6 = 4*(G+H)*1e-3; % mm
