@@ -16,20 +16,23 @@ F = 10;
 G = 12; 
 H = 10; 
 
+% Note: The labels are for the old units, they are then converted to SI.
+
 % Table 1
 Js = (A / 5) * 1e-7; % gcm^2
 Ms = B / 4 * 1e-3; % g
 Bs = C / 3; % Ns/m
-ns = D / (2*E) * 1e2; % turn/cm
+ns = D / (2*E) * (2*pi*100); % turn/cm
 Jf = F / 3 * 1e-7; % gcm^2
 Bf = G * 1e-3; % mNms
-nf = H * 1e2; % deg/cm
+nf = H * (pi/180*100); % deg/cm
 Bt = A *1e-3; % mNms
 Kt = B*C* 1e-3; % mNm
-% nt? 
 Bl = D / 5; % Ns/m
 Kl = E*F; % N/m
 L6 = 4*(G+H)*1e-3; % mm
+nt = L6; % FROM PIAZZA  
+
 
 % Table 2
 P1 = A*7; 
@@ -56,7 +59,7 @@ DC = C+D+E+F; % %
 % Table 5
 WnRes = 0.1;
 ZetaRes = 10^-2; 
-TargPM = 40; % deg
+TargPM = 40; % deg MAKE SURE YOU CONVERT TO RAD
 OSu = 60; % Caution: these are funky
 Ts = 75; 
 % Tr less than final Ts
@@ -75,4 +78,121 @@ Q1.Tp = 0.00165;
 Q1.Ts = 4.65 * 1e-3;
 Q1.OSy = 25; 
 
+% Question 2
+% Approximation with peak time. 
+% For 2nd Order we shall find zeta and wn 
+% %OS = e^(-Zeta * pi / (1 - Zeta^2)^0.5) * 100%
+syms Zeta wn; 
+equation1 = Q1.OSy == exp(-Zeta * pi / (1 - Zeta^2)^0.5) * 100;
+Zeta = solve(equation1, Zeta); 
+Zeta = double(Zeta); 
+% We shall discard negative Zeta since that represents an unstable system
+Zeta = Zeta(1);
+% wn depends on Zeta and on which factor we've chosen. Here it's peak time
+equation2 = Q1.Tp == pi / (wn * (1 - Zeta^2)^0.5); 
+wn = solve(equation2, wn);
+wn = double(wn); 
+
+% Second Order approximation
+% 12 is the DC Gain approximated
+Q2.Ga = 12 * wn^2 / (s^2 + 2*wn*Zeta*s + wn^2);
+
+% Finding transfer function
+[A, B, C, D] = linmod("Figure2");
+sys = ss(A, B, C, D); 
+tf_sys = 1e-3 * tf(sys);
+Q3.Ks = dcgain(tf_sys);
+Q3.Ds = tf_sys / Q3.Ks;
+
+% Finding Admittance 
+
+Q4.Ye = 1 / (s*Lw + Rw);
+
+% Finding the Mechanical Admittance
+
+% Adding total masses across transmission
+totalMass = Jr + Js +  (Mm + Ms) / ns^2 + nf^2 / ns^2 * 3 * Jf;
+massImpedance = 1 / (s * totalMass);
+% Setting up the raw impedances for the electrical domain 
+ZBR = 1 / Br; 
+ZBS = 1 / Bs; 
+ZBF = 1 / Bf;
+ZKT = s / Kt;
+ZBT = 1 / Bt; 
+ZT = (1 / ZBT + 1 / ZKT)^-1;
+ZKL = s / Kl;
+ZBL = 1 / Bl; 
+ZL = (1 / ZBL + 1 / ZKL)^-1;
+
+% Setting up reflected impedance across transmissions
+ZBS = 3 / ns^2 * ZBS; 
+ZBF = 3 / ns^2 * nf^2 * ZBF; 
+ZT  = 3 / ns^2 * nf^2 * ZT; 
+ZL  = 3 / ns^2 * nf^2 * nt^2 * ZL; 
+
+
+% By taking KCL we can get: -1 + wr / Zc + wr / Zr1 + wr / Zr2
+wr = (1) / (1 / massImpedance + 1 / ZBS + 1 / ZBF + 1 / (ZT + ZL)); 
+
+Q5.Ym = wr; 
+
+
+
+MT  = Jr + Js + (Mm + Ms)/ns^2 + 3*Jf*(nf^2/ns^2);
+zmt = MT*s;
+
+zbs = Bs/ns^2;
+zbr = Br;
+zbf = 3*Bf*(nf^2/ns^2);
+zbt = 3*Bt*(nf^2/ns^2);
+zkt = 3*(Kt/s)*(nf^2/ns^2);
+
+zbl = 3*Bl*(nf^2*nt^2/ns^2);
+zkl = 3*(Kl/s)*(nf^2*nt^2/ns^2);
+
+K = [ zmt + zbr + zbs + zbf + zbt + zkt,   -zkt - zbt;
+      -zkt - zbt,                          zkt + zbt + zkl + zbl ];
+
+F = [1; 0];
+X = K \ F;            % better than inv(K)*F
+Q5.Ym = X(1);         % node-1 velocity per unit force (admittance)
+
+
+% SIT DOWN AND UNDERSTAND WHAT'S GOING ON HERE
+% ---- equivalent single-body Z–Z model ----
+MT  = Jr + Js + (Mm + Ms)/ns^2 + 3*Jf*(nf^2/ns^2);
+zmt = MT*s;
+
+zbs = Bs/ns^2;
+zbr = Br;
+zbf = 3*Bf*(nf^2/ns^2);
+zbt = 3*Bt*(nf^2/ns^2);
+zkt = 3*(Kt/s)*(nf^2/ns^2);
+zbl = 3*Bl*(nf^2*nt^2/ns^2);
+zkl = 3*(Kl/s)*(nf^2*nt^2/ns^2);
+
+% compute sub-blocks
+Z11 = zmt + zbr + zbs + zbf + zbt + zkt;
+Z12 = -(zkt + zbt);
+Z22 =  zkt + zbt + zkl + zbl;
+
+% equivalent single impedance seen at node 1
+Zeq = Z11 - Z12^2 / Z22;
+
+% total mechanical admittance (velocity per unit force)
+Q5.Ym = 1 / Zeq;
+
+g = 9.81;
+m  = Mm + Ms;       % effective mass per finger that moves vertically
+r  = L6;            % lever arm to finger COM (in meters)
+ang = [90, 45, -45]*pi/180;   % example angles to vertical (deg → rad)
+sgn = [ +1, -1, -1 ];        % example signs (set by your torque convention)
+
+tau_finger = sum( m*g*r .* sin(ang) .* sgn ); % Nm at finger axis
+tau_motor  = tau_finger * (nf*nt/ns);         % reflect to motor/winding side
+
+Q6.taug = abs(tau_motor);   % if the problem asks for magnitude
+
+g = 9.81;
+Q6.taug=g*(Mm)/ns;
 p1Submit
