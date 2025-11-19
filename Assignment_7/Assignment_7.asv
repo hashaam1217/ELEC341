@@ -1,0 +1,259 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% MATLAB ASSIGNMENT 7 - ELEC 341 - IDIL BIL
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Clean up workspace
+clear all; 
+clc;
+
+% Student Number
+SN    = 10078020;
+A = 11;
+B = 10;
+C = 10;
+D = 17;
+E = 18;
+F = 10;
+G = 12;
+H = 10;
+
+CF = A*10;
+DC = 30;
+TF 
+%% ELEC 341 - Assignment A7 Solution Script
+% Assumes the following are already defined in the workspace:
+%   A, B, C, D : continuous-time state-space matrices for the plant branch
+%   CF         : control frequency in Hz (CF = #A * 10)
+%   DC         : duty cycle in percent (DC = 30)
+%   tau_f      : FIR filter time constant in seconds (tau_f = (#B + #C)*1e-3)
+%
+% This script produces Q1..Q10 structs matching the Canvas grading script:
+%   Q1.G, Q1.H
+%   Q2.N, Q2.wp, Q2.Dh
+%   Q3.NC, Q3.W, Q3.Nf, Q3.N, Q3.wp
+%   Q4.K, Q4.Ts, Q4.Ess
+%   Q5.D
+%   Q6.Kp, Q6.Kd
+%   Q7.Ts, Q7.Ess
+%   Q8.D
+%   Q9.Kp, Q9.Ki
+%   Q10.Ts, Q10.Ess
+
+%% Basic LTI objects from A,B,C,D
+s  = tf('s');
+Gp = ss(A,B,C,D);   % plant / branch dynamics
+Hs = 1;             % sensor gain (adjust if you have a non-trivial sensor)
+
+%% Q1 – Open-Loop Transfer Functions (forward and feedback)
+
+% Forward path gain: G = ya / x1
+Q1.G = Gp;          % adjust if your A,B,C,D represent something slightly different
+
+% Feedback path gain: H = x4 / ya
+Q1.H = Hs;          % simple unity sensor; replace by your sensor LTI if needed
+
+%% Q2 – Delay Overhead (ISR + hold delay)
+% Micro-controller ISR at CF [Hz] with duty cycle DC [%]
+% We approximate total delay as a multiple N of the sample period:
+%   - DC% of a period for ISR
+%   - 0.5 periods for zero-order hold effect
+
+T_sample = 1/CF;           % control period [s]
+
+N_duty = DC / 100;         % fraction of one period
+N_hold = 0.5;              % half period due to hold
+Q2.N  = N_duty + N_hold;   % dimensionless multiple of sample period
+
+T_delay = Q2.N * T_sample; % total effective delay [s]
+
+% First-order lag approximation of delay:
+%   exp(-s*T_delay) ~ wp / (s + wp), where wp = 1 / T_delay
+Q2.wp = 1 / T_delay;       % pole frequency [rad/s] (always positive)
+
+Q2.Dh = Q2.wp / (s + Q2.wp);   % feedback dynamics for delay (LTI)
+
+%% Q3 – FIR Filter on Sensor Noise
+% FIR approximates exp(-t/tau_f). We keep coefficients >= 2% of the max.
+% Sampled at T_sample.
+
+% Build raw exponential coefficients
+w_raw = [];
+k     = 0;
+while true
+    wk = exp(-(k*T_sample)/tau_f);
+    if wk < 0.02
+        break
+    end
+    w_raw(end+1) = wk; %#ok<AGROW>
+    k = k + 1;
+end
+
+Q3.NC = numel(w_raw);          % number of coefficients
+
+% Normalized weighting coefficients (row vector)
+Q3.W  = w_raw / sum(w_raw);    % 1 x NC
+
+% Filter delay in samples: mean index
+idx    = 0:(Q3.NC-1);
+Q3.Nf  = sum(idx .* Q3.W);     % units: samples
+
+% New total delay multiple (old delay + FIR delay)
+Q3.N   = Q2.N + Q3.Nf;
+
+% New pole frequency from total delay
+T_delay_total = Q3.N * T_sample;
+Q3.wp         = 1 / T_delay_total;
+
+%% Update Dh to include FIR delay (Q4 onward uses this Dh)
+Dh = Q3.wp / (s + Q3.wp);
+
+%% Helper: Closed-loop builders and performance metrics
+
+% Closed-loop from reference to output (negative feedback): P-control
+cl_P = @(K) feedback( K * Gp, Dh * Hs );
+
+% Overshoot design ranges (RCG: 1% < OSu < 3%)
+OS_min    = 0.01;
+OS_max    = 0.03;
+OS_target = 0.02;   % aim for ~2% as a mid-point
+
+% Generic K tuner that tries to hit OS_target within [OS_min, OS_max]
+function [K_best, info_best, sys_best] = tuneK_OSu(cl_builder, OS_min, OS_max, OS_target)
+    kgrid    = logspace(-3, 3, 60);  % search range; adjust if needed
+    K_best   = NaN;
+    info_best = [];
+    sys_best  = [];
+    best_err  = Inf;
+
+    for K = kgrid
+        sys = cl_builder(K);
+        info = stepinfo(sys);
+        OSu = info.Overshoot / 100;  % normalize to fraction
+
+        if ~isfinite(OSu)
+            continue
+        end
+
+        % Prefer solutions inside [OS_min, OS_max], else fallback
+        if OSu > OS_min && OSu < OS_max
+            err = abs(OSu - OS_target);
+            if err < best_err
+                best_err = err;
+                K_best   = K;
+                info_best = info;
+                sys_best  = sys;
+            end
+        end
+    end
+
+    % Fallback: if nothing lands in band, pick closest OSu overall
+    if isnan(K_best)
+        best_err = Inf;
+        for K = kgrid
+            sys = cl_builder(K);
+            info = stepinfo(sys);
+            OSu = info.Overshoot / 100;
+            if ~isfinite(OSu)
+                continue
+            end
+            err = abs(OSu - OS_target);
+            if err < best_err
+                best_err  = err;
+                K_best    = K;
+                info_best = info;
+                sys_best  = sys;
+            end
+        end
+    end
+end
+
+%% Q4 – Proportional Control (P only), with updated Dh
+
+[Kp_P, info_P, sys_P] = tuneK_OSu(cl_P, OS_min, OS_max, OS_target);
+
+Q4.K   = Kp_P;
+Q4.Ts  = info_P.SettlingTime;
+
+% Steady-state error to unit step
+dcg     = dcgain(sys_P);
+Q4.Ess  = 100 * (1 - dcg);  % percentage error
+
+%% Dominant pole of branch dynamics (for PD/PI design)
+% "System pole" = most dominant (closest to jω-axis) pole of the branch:
+%   branch(s) = Gp(s) * Dh(s) * Hs(s)
+
+branch = series(Gp, series(Dh, Hs));
+poles  = pole(branch);
+
+% Dominant pole: maximum real part (closest to zero)
+[~, idx_dom] = max(real(poles));
+p_dom = poles(idx_dom);      % typically negative for stable system
+w_dom = -real(p_dom);        % positive frequency
+
+%% Q5 – PD Controller Dynamics
+% Zero at the dominant pole: s = p_dom.
+% Normalized dynamics (K=1):
+%   D_PD(s) = 1 + s/w_dom = (s + w_dom)/w_dom
+% We keep the unity DC gain form 1 + s/w_dom.
+
+D_PD = tf([1/w_dom, 1], 1);  % = (1/w_dom)*s + 1
+
+Q5.D = D_PD;
+
+%% Q6 – PD Control gains Kp, Kd (normalized K=1)
+% Master gain K tuned separately to satisfy RCG of Q4.
+
+% Closed-loop with PD: C(s) = K * D_PD(s)
+cl_PD = @(K) feedback( K * D_PD * Gp, Dh * Hs );
+
+[K_PD, info_PD, sys_PD] = tuneK_OSu(cl_PD, OS_min, OS_max, OS_target);
+
+% Normalized (K=1) proportional & derivative gains:
+num_PD = tfdata(D_PD, 'v');    % [Kd_norm Kp_norm]
+Q6.Kd  = num_PD(1);
+Q6.Kp  = num_PD(2);
+
+% (If you need actual gains in implementation: Kp_impl = K_PD*Q6.Kp, Kd_impl = K_PD*Q6.Kd)
+
+%% Q7 – PD Metrics (Ts, Ess)
+
+Q7.Ts  = info_PD.SettlingTime;
+dcg_PD = dcgain(sys_PD);
+Q7.Ess = 100 * (1 - dcg_PD);
+
+%% Q8 – PI Controller Dynamics
+% Zero at dominant pole p_dom:
+%   PI(s) = Kp + Ki/s, zero at s = -Ki/Kp
+% For normalized K=1, choose:
+%   D_PI(s) = (s - p_dom)/s = 1 - p_dom/s
+%           = 1 + (-p_dom)/s
+% => Kp_norm = 1, Ki_norm = -p_dom (> 0 if p_dom < 0)
+
+D_PI = tf([1, -p_dom], [1, 0]);   % (s - p_dom)/s
+
+Q8.D = D_PI;
+
+%% Q9 – PI Control gains Kp, Ki (normalized K=1)
+% Master gain K tuned again to satisfy the same RCG as Q4.
+
+cl_PI = @(K) feedback( K * D_PI * Gp, Dh * Hs );
+
+[K_PI, info_PI, sys_PI] = tuneK_OSu(cl_PI, OS_min, OS_max, OS_target);
+
+num_PI = tfdata(D_PI, 'v');   % numerator [1, -p_dom]
+% D_PI(s) = (1*s + (-p_dom))/s = 1 + (-p_dom)/s
+
+Q9.Kp = num_PI(1);       % = 1
+Q9.Ki = num_PI(2);       % = -p_dom  (positive in magnitude)
+
+% (Implementation gains: Kp_impl = K_PI*Q9.Kp, Ki_impl = K_PI*Q9.Ki)
+
+%% Q10 – PI Metrics (Ts, Ess)
+
+Q10.Ts  = info_PI.SettlingTime;
+dcg_PI  = dcgain(sys_PI);
+Q10.Ess = 100 * (1 - dcg_PI);
+
+%% End of script
+
+a7Submit

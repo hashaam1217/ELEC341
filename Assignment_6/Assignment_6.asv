@@ -61,29 +61,7 @@ Q3.OSy = (0.987 / 0.672) * 100 - 100;
 
 
 %% Question 4
-Q4.K = 0.245 * Q1.Ku;
-Q4.Ts = 0.409;
-Q4.Ess = 50; 
-
-%% Question 5
-% 0.1458 targetted peak time
-Q5.K = 0.845; 
-Q5.Ts = 2.6; 
-Q5.Ess = (1 - 0.777) * 100; 
-
-% Closed-loop transfer function ya/yd for Q5
-Gcl_Q5 = feedback(Q5.K * Q1.G, Q1.H);   % same structure you used for Q2.Gcl / Q3
-
-% Get step-response metrics (same as Q3)
-infoQ5 = stepinfo(Gcl_Q5);      % uses default 2% settling band
-
-% Final value (use dcgain or last sample of step)
-yf_Q5 = dcgain(Gcl_Q5);
-
-% Now fill in the fields the grader uses:
-Q5.Ts  = infoQ5.SettlingTime;
-Q5.Ess = (1 - yf_Q5) * 100;     % percent error for unit step
-
+Q4.K = 0.2
 
 %% Submit
 a6Submit
