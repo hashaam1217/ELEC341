@@ -5,7 +5,7 @@ clear all; clc;
 SN = 10078020;
 A = 11;
 B = 10;
-C = 10;n
+C = 10;
 D = 17;
 E = 18;
 F = 10;
@@ -66,16 +66,14 @@ Q3.N = Q2.N + Q3.Nf;
 Q3.wp = CF / Q3.N; 
 
 %% Question 4
-new_DH = zpk([], - Q3.wp, CF / Q3.N); % Setting new Dynamics
-K = 0.01; 
+new_DH = zpk([], - Q3.wp, CF / Q3.N); % Delay 
+K = 0.9; 
 TF = feedback(K * Q1.G, Q1.H * new_DH);
-Q4.K = 0.8;
-Q4.Ts = 1; 
-Q4.Ess = 1; 
-
+Q4.K = 0.9;
+Q4.Ts = 0.22; 
+Q4.Ess = (1-0.2) * 100; 
 
 %% Submit
-
 a7Submit
 
 
