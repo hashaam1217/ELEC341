@@ -67,14 +67,13 @@ Q3.wp = CF / Q3.N;
 
 %% Question 4
 new_DH = CF / (Q3.N * s + CF); % Delay 
-K = 6.7; % Note: Overshoot over 1, not the steady state value. 
+K = 6.7; % Note: 
 TF = feedback(K * Q1.G, Q1.H * new_DH);
-info = stepinfo(TF, 'RiseTimeLimits', [0 1]);
 Q4.K = K;
-Q4.Ts = 1.147; 
-Q4.Ess = (1-0.647) * 100;
+Q4.Ts = 0.22; 
+Q4.Ess = (1-0.2) * 100;
 
 %% Submit
-a7Submit
+% 7Submit
 
 
