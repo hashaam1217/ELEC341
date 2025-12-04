@@ -74,6 +74,40 @@ Q4.K = K;
 Q4.Ts = 1.147; 
 Q4.Ess = (1-0.647) * 100;
 
+%% Question 5
+OpenLoopTF = K * Q1.G * Q1.H * new_DH;
+MostDominantPole = -11; 
+TempPole = - 2 * CF;
+
+Q5.D = (TempPole/MostDominantPole) * (s - MostDominantPole) / (s - TempPole);
+
+%% Question 6
+ClosedLoopTF = feedback(K * Q1.G * Q5.D, Q1.H * new_DH);
+Q6.Kp = 5.5;
+Q6.Kd = Q6.Kp * (MostDominantPole - TempPole) / (MostDominantPole*TempPole);
+% Technically if this was ideal we could pull off something like: 
+% Q6.Kp / - MostDominantPole
+
+%% Question 7
+ClosedLoopTF = feedback(Q6.Kp * Q1.G * Q5.D, Q1.H * new_DH);
+info = stepinfo(ClosedLoopTF);
+Q7.Ts = 0.8359;
+Q7.Ess = (1 - 0.6) * 100; 
+
+%% Question 8
+Q8.D = (s - MostDominantPole) / (s * -MostDominantPole);
+
+%% Question 9
+K = 19;
+ClosedLoopTF = feedback(K * Q1.G * Q8.D, Q1.H * new_DH);
+info = stepinfo(ClosedLoopTF);
+Q9.Ki = K;
+Q9.Kp =K / -MostDominantPole;
+
+%% Question 10
+Q10.Ts = 0.4887;
+Q10.Ess = 0;
+
 %% Submit
 a7Submit
 
