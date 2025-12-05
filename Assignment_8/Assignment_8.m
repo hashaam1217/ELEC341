@@ -28,6 +28,8 @@ wn_res = 10^-1;          % rad/s
 zeta_res = 10^-2;        % pure
 Target_PM = 60;          % deg
 
+%% Question 1
+
 %% Q1: A7 Parameters (0 marks)
 % Plant transfer function
 Gp = zpk(s4, [s3, s1, s2 - 1j*w2, s2 + 1j*w2], 1);
@@ -304,5 +306,34 @@ fprintf('Q11: PID Metrics\n');
 fprintf('  Tr = %.4f s\n', Q11.Tr);
 fprintf('  OSu = %.4f %%\n\n', Q11.OSu);
 
-%% Submit (uncomment when ready)
-a8Submit
+%% Personal Attempt
+Assignment_7; 
+
+%% A8 Parameters
+tau_pid = D / 2 * 1e-3;  % ms = 8.5 ms
+wn_res = 10^-1;          % rad/s
+zeta_res = 10^-2;        % pure
+Target_PM = 60;          % deg
+
+%% Question 1
+% Q1.G remains the same as Assignment 7
+Q1.H = Hs * new_DH; 
+
+%% Question 2
+dt = 1 / CF; 
+Q2.beta = exp(-dt/tau_pid);
+Q2.Nf = Q2.beta / (1 - Q2.beta); 
+Q2.Npid = Q2.Nf + 0.5; 
+Q2.wp = (2/Ts) * ((1 - Q2.beta) / (1 + Q2.beta)); % BiLinear Transform. 
+% Zero idea where that came from. 
+
+%% Question 3
+D = Q2.wp / (s + Q2.wp);
+OpenLoopTF = D * Q1.G * Q1.H; 
+Q3.K0 = 8.7838e08;
+Q3.wxo = 1; 
+Q3.Z = 1; 
+Q3.D = 1 / s; 
+
+%% Submit
+% a8Submit
