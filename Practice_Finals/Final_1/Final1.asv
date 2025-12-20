@@ -1,0 +1,73 @@
+% Practice Final 1
+% Author: Hashaam Zafar
+% Date: 19/12/2025
+
+%% Setup
+SN = 10078020; 
+A = 11; 
+B = 10;
+C = 10; 
+D = 17; 
+E = 18; 
+F = 10; 
+G = 12; 
+H = 10; 
+
+s = tf('s');
+
+% Table 1
+Dp = A * 1e-2; % cm
+Jp = B * 2e-4; % Nms^2/rad
+Mt = C / 2; % Kg
+Bp = D * 1e-5; % Nms/rad
+Bw = E + F;  % Ns/m
+Kt = G / 2; % N/m
+
+% Table 2
+K0 = 3e6; % V/rad
+P1 = B * 25; % rad/s
+P2 = C * 25; % rad/s
+
+% Table 3
+Rw = A / 3; % Ohm
+Lw = B / 5; % H
+Km = C * 2e-2; % Nm/A
+Jm = D * 4e-4; % Nms^2/rad
+Bm = E * 2e-6; % Nms/rad
+
+% Table 4
+CF = D * 20 * 2 * pi; % Hz
+DC = E + F;
+
+% Table 5
+WnRes = 0.1; % rad/s
+ZetaRes = 10^-2; % pure
+TargPM = 60 * pi / 180; % deg
+OSu = 70; 
+Ts = 50;
+Tr = Ts; 
+Ess = 0; 
+
+
+H1 = 1 / (s + P1);
+H2 = 1 / (s + P2);
+
+%% Question 1
+Peak = 5.53658;
+Steady_State = 4.62361;
+Overshoot = (Peak - Steady_State) / Steady_State;
+% OS = e^(-Zeta * pi/ (1-Zeta^2)^0.5) * 100%
+syms Zeta;
+equation1 = Overshoot == exp(-Zeta * pi / (1 - Zeta^2)^0.5);
+Zeta = solve(equation1, Zeta, 'Real', true);
+Zeta = double(Zeta);
+
+Ts = 0.102;
+Wn = 4 / (Zeta*Ts);
+
+Q1.Ga = 4.623 * Wn^2 / (s^2 + 2 * Zeta * Wn * s + Wn^2);
+
+%% Question 2
+Hs = H2 * (H1 - 1) / (1 + H2 * H1);
+Q2.Ks = dcgain(Hs);
+Q2.Ds = Hs / dcgain(Hs);
