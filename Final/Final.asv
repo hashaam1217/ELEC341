@@ -248,10 +248,10 @@ cltf = feedback(K_ref * Q11.D * Q9.G, Q9.H);
 
 info = stepinfo(cltf, 'RiseTimeLimits', [0, 1]);
 
-Q14.Tr = info.RiseTime * 0.87;
-Q14.Tp = info.PeakTime * 0.88;
-Q14.Ts = info.SettlingTime * 1.19;
-Q14.OSy = 20;
+Q14.Tr = info.RiseTime;
+Q14.Tp = info.PeakTime;
+Q14.Ts = info.SettlingTime;
+Q14.OSy = info.Overshoot;
 
 % For input overshoot OSu: this is the overshoot of x3 (control voltage)
 % x3/x2 = D/(1 + D*G*H)
